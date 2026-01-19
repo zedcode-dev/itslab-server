@@ -16,8 +16,13 @@ exports.initiateManualPayment = async (req, res, next) => {
         const { courseId, paymentMethod, senderInfo } = req.body;
         const userId = req.user.id;
 
+        // Restriction: Admins and Instructors cannot enroll
+        if (req.user.role !== 'student') {
+            return errorResponse(res, 403, 'Instructors and Admins cannot enroll in courses.');
+        }
+
         // Check if email is verified
-        if (!req.user.is_verified) {
+        if (!req.user.email_verified && !req.user.emailVerified) { // Check both potential property names
             return errorResponse(res, 403, 'Please verify your email before purchasing courses');
         }
 
