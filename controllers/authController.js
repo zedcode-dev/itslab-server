@@ -355,7 +355,17 @@ exports.getProfile = async (req, res, next) => {
       attributes: { exclude: ['password_hash', 'refresh_token'] },
     });
 
-    return successResponse(res, 200, 'Profile retrieved successfully', { user });
+    return successResponse(res, 200, 'Profile retrieved successfully', {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        emailVerified: user.email_verified,
+        profilePicture: user.profile_picture,
+        bio: user.bio,
+      }
+    });
   } catch (error) {
     next(error);
   }

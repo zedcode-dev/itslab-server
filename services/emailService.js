@@ -10,43 +10,101 @@ const emailConfig = require('../config/email');
 const transporter = nodemailer.createTransport(emailConfig.smtp);
 
 /**
+ * Base email wrapper for consistent styling
+ */
+/**
+ * Base email wrapper for consistent simple styling
+ */
+const baseTemplate = (content, preheader = '') => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ITSLab</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #000000; }
+    .container { max-width: 580px; margin: 0 auto; padding: 40px 20px; }
+    .header { padding-bottom: 30px; border-bottom: 1px solid #eaeaea; }
+    .logo { font-size: 24px; font-weight: 700; color: #000000; text-decoration: none; letter-spacing: -0.5px; }
+    .content { padding: 40px 0; }
+    .greeting { font-size: 20px; font-weight: 600; margin: 0 0 20px 0; color: #000000; }
+    .text { font-size: 15px; line-height: 1.6; color: #333333; margin: 0 0 20px 0; }
+    .btn { display: inline-block; padding: 14px 28px; background-color: #000000; color: #ffffff !important; text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 6px; margin-top: 10px; }
+    .btn:hover { background-color: #333333; }
+    .footer { padding-top: 30px; border-top: 1px solid #eaeaea; text-align: center; }
+    .footer-text { font-size: 12px; color: #888888; margin: 0 0 5px 0; }
+    .highlight { background-color: #f9f9f9; padding: 15px; border-radius: 6px; border: 1px solid #eaeaea; margin: 20px 0; }
+    .highlight-text { font-weight: 600; margin: 0; font-size: 15px; }
+    .preheader { display: none; max-height: 0; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div class="preheader">${preheader}</div>
+  <div class="container">
+    <div class="header">
+      <div class="logo">ITSLab</div>
+    </div>
+    ${content}
+    <div class="footer">
+      <p class="footer-text">© ${new Date().getFullYear()} ITSLab. All rights reserved.</p>
+      <p class="footer-text">This is an automated message, please do not reply directly.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+/**
  * Email templates
  */
 const templates = {
-  'verify-email': (data) => `
-    <h1>Welcome to ITSLab, ${data.name}!</h1>
-    <p>Please verify your email address by clicking the link below:</p>
-    <a href="${data.verificationUrl}" style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; display: inline-block;">Verify Email</a>
-    <p>This link will expire in 24 hours.</p>
-    <p>If you didn't create an account, please ignore this email.</p>
-  `,
+  'verify-email': (data) => baseTemplate(`
+    <div class="content">
+      <h1 class="greeting">Welcome to ITSLab, ${data.name}</h1>
+      <p class="text">Thank you for creating an account. To enable all features, please verify your email address.</p>
+      <div style="margin: 30px 0;">
+        <a href="${data.verificationUrl}" class="btn">Verify Email Address</a>
+      </div>
+      <p class="text" style="color: #666; font-size: 13px;">This link will remain valid for 24 hours. If you did not create an account, you can ignore this email.</p>
+    </div>
+  `, 'Please verify your email address'),
 
-  'reset-password': (data) => `
-    <h1>Password Reset Request</h1>
-    <p>Hello ${data.name},</p>
-    <p>You requested to reset your password. Click the link below to proceed:</p>
-    <a href="${data.resetUrl}" style="background-color: #2196F3; color: white; padding: 14px 20px; text-decoration: none; display: inline-block;">Reset Password</a>
-    <p>This link will expire in 1 hour.</p>
-    <p>If you didn't request this, please ignore this email.</p>
-  `,
+  'reset-password': (data) => baseTemplate(`
+    <div class="content">
+      <h1 class="greeting">Reset Your Password</h1>
+      <p class="text">Hello ${data.name}, we received a request to change your password.</p>
+      <div style="margin: 30px 0;">
+        <a href="${data.resetUrl}" class="btn">Reset Password</a>
+      </div>
+      <p class="text" style="color: #666; font-size: 13px;">This link expires in 1 hour. If you did not request this change, your account is secure and no action is needed.</p>
+    </div>
+  `, 'Reset your password'),
 
-  'enrollment-confirmation': (data) => `
-    <h1>Enrollment Confirmed!</h1>
-    <p>Congratulations ${data.studentName}!</p>
-    <p>You have successfully enrolled in <strong>${data.courseName}</strong>.</p>
-    <p>Start learning now:</p>
-    <a href="${data.courseUrl}" style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; display: inline-block;">Go to Course</a>
-    <p>Happy learning!</p>
-  `,
+  'enrollment-confirmation': (data) => baseTemplate(`
+    <div class="content">
+      <h1 class="greeting">Enrollment Confirmed</h1>
+      <p class="text">Hello ${data.studentName},</p>
+      <p class="text">You have successfully been enrolled in the following course:</p>
+      <div class="highlight">
+        <p class="highlight-text">${data.courseName}</p>
+      </div>
+      <div style="margin: 30px 0;">
+        <a href="${data.courseUrl}" class="btn">Go to Course</a>
+      </div>
+    </div>
+  `, 'Enrollment confirmation'),
 
-  'course-completion': (data) => `
-    <h1>Congratulations on Completing the Course!</h1>
-    <p>Well done, ${data.studentName}!</p>
-    <p>You have successfully completed <strong>${data.courseName}</strong>.</p>
-    <p>Download your certificate:</p>
-    <a href="${data.certificateUrl}" style="background-color: #FF9800; color: white; padding: 14px 20px; text-decoration: none; display: inline-block;">Download Certificate</a>
-    <p>Keep learning and growing!</p>
-  `,
+  'course-completion': (data) => baseTemplate(`
+    <div class="content">
+      <h1 class="greeting">Course Completed</h1>
+      <p class="text">Congratulations ${data.studentName},</p>
+      <p class="text">You have successfully completed <strong>${data.courseName}</strong>.</p>
+      <p class="text">Your certificate of completion is now available.</p>
+      <div style="margin: 30px 0;">
+        <a href="${data.certificateUrl}" class="btn">Download Certificate</a>
+      </div>
+    </div>
+  `, 'Your certificate is ready'),
 };
 
 /**
